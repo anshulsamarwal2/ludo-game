@@ -189,7 +189,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 
 <!-- MENU -->
 <div id="menu" class="scr on">
-  <div><div class="logo-t">LUDO</div><div class="logo-s">✦ Classic Edition ✦</div></div>
+  <div><div class="logo-t">LUDO</div><div class="logo-s">✦ by Anshul ✦</div></div>
   <div class="card">
     <div class="sec">Game Mode</div>
     <div class="mode-grid">
@@ -627,6 +627,7 @@ function tryRoll(col){
 }
 
 function execRoll(col){
+  if(!G||G.finished.includes(col))return; // safety guard
   G.rolled=true;
   // Disable all roll buttons during animation
   G.cols.forEach(c=>{const b=document.getElementById(`rbtn-${c}`);if(b)b.disabled=true;});
@@ -766,8 +767,7 @@ async function doMove(col,id){
       setTimeout(nextTurn,400);
       return;
     }
-    // Only 1-3 tokens home — bonus roll for reaching center
-    bonus=true;
+    // 1-3 tokens home — no bonus, just proceed normally
   }
 
   updatePanels();
@@ -783,11 +783,15 @@ async function doMove(col,id){
 /* ── NEXT TURN ── */
 function nextTurn(){
   G.rolled=false;G.dice=null;G.moveable=[];G.turns++;
-  // Reset die face for all players (show blank)
   G.cols.forEach(c=>setDiceFace(c,0));
-  // Advance to next non-finished player
-  let nxt=(G.cur+1)%G.np,t=0;
-  while(G.finished.includes(G.cols[nxt])&&t<G.np){nxt=(nxt+1)%G.np;t++;}
+  // Find next active (non-finished) player — bulletproof loop
+  let nxt=(G.cur+1)%G.np;
+  let attempts=0;
+  while(G.finished.includes(G.cols[nxt])){
+    nxt=(nxt+1)%G.np;
+    attempts++;
+    if(attempts>=G.np){ setTimeout(showWinOver,400); return; }
+  }
   G.cur=nxt;
   setMovable([]);
   updateStatus();
